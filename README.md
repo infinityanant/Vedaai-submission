@@ -1,190 +1,459 @@
-# VedaAI — AI-Powered Assessment Creator
+# 🚀 VedaAI — AI Powered Assessment Creator
 
-Create structured, AI-generated question papers with real-time status updates.
+An AI-driven full-stack platform that enables teachers to generate structured, curriculum-aligned assessments dynamically using Large Language Models, asynchronous job processing, and real-time WebSocket updates.
+
+Built as part of the VedaAI Full Stack Engineering Assignment.
 
 ---
 
-## Architecture
+# ✨ Features
 
+## 📄 Assignment Creation
+
+Teachers can:
+
+* Create assignments dynamically
+* Configure multiple question types
+* Set due dates
+* Define marks distribution
+* Add custom instructions
+* Upload contextual learning materials *(extensible multimodal pipeline)*
+
+---
+
+## 🤖 AI Question Paper Generation
+
+The system generates:
+
+* Structured exam papers
+* Multiple sections (A, B, etc.)
+* Difficulty-tagged questions
+* Marks allocation
+* MCQs / Short / Long / Numerical / Diagram-based questions
+
+The AI output is parsed into structured JSON instead of rendering raw LLM text.
+
+---
+
+## ⚡ Real-time Status Updates
+
+The platform uses WebSockets for live updates:
+
+* Queued
+* Generating
+* Completed
+* Failed
+
+Users receive real-time generation progress without refreshing the page.
+
+---
+
+## 🧠 Queue-Based Async Architecture
+
+LLM generation is processed asynchronously using:
+
+* BullMQ
+* Redis
+* Dedicated workers
+
+This prevents blocking HTTP requests and creates a scalable architecture for long-running AI tasks.
+
+---
+
+# 🏗️ System Architecture
+
+VedaAI follows a distributed queue-based architecture for scalable AI processing.
+
+```text
+                 ┌──────────────────────────────────────────┐
+                 │          Frontend Client                 │
+                 │  TanStack Start + Zustand + Socket.io   │
+                 └───────────────┬──────────────────────────┘
+                                 │
+                       HTTP POST │
+                 /api/assignments│
+                                 ▼
+                 ┌──────────────────────────────────────────┐
+                 │          Express API Server              │
+                 │  Validation + DB Persistence + Queue     │
+                 └───────────────┬──────────────────────────┘
+                                 │
+                                 ▼
+                 ┌──────────────────────────────────────────┐
+                 │            BullMQ Queue                  │
+                 │         Redis-backed Jobs                │
+                 └───────────────┬──────────────────────────┘
+                                 │
+                                 ▼
+                 ┌──────────────────────────────────────────┐
+                 │          Worker Process                  │
+                 │   Gemini Prompting + JSON Parsing        │
+                 └───────────────┬──────────────────────────┘
+                                 │
+                                 ▼
+                 ┌──────────────────────────────────────────┐
+                 │              MongoDB                     │
+                 │     Generated Paper + Metadata           │
+                 └───────────────┬──────────────────────────┘
+                                 │
+                                 ▼
+                 ┌──────────────────────────────────────────┐
+                 │            Socket.io Server              │
+                 │      Real-time Client Updates            │
+                 └──────────────────────────────────────────┘
 ```
-Frontend (TanStack Start / React)
-        ↓ HTTP POST /api/assignments
-Express API Server
-        ↓ addJob()
-BullMQ Queue (Redis)
-        ↓ process()
-Worker → Google Gemini AI
-        ↓ save result
-MongoDB
-        ↓ socket.emit()
-Socket.io → Frontend (real-time update)
-```
 
 ---
 
-## Tech Stack
+# 🛠️ Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Frontend** | TanStack Start, React 19, Zustand, TailwindCSS, Radix UI |
-| **Backend** | Node.js, Express, TypeScript |
-| **AI** | Google Gemini 1.5 Flash (free tier) |
-| **Database** | MongoDB Atlas (free tier) |
-| **Queue** | BullMQ + Redis |
-| **Real-time** | Socket.io |
-| **Deployment** | Vercel (frontend) + Render (backend) |
+## Frontend
 
----
-
-## Features
-
-- ✅ Create assignments with custom question types (MCQ, Short Answer, Long Answer, True/False, Numerical, Diagram)
-- ✅ AI-generated structured question papers via Google Gemini
-- ✅ Real-time generation status via WebSocket (no polling)
-- ✅ Async job queue with BullMQ (3 retries, exponential backoff)
-- ✅ MongoDB persistence — assignments survive server restarts
-- ✅ Full TypeScript across frontend and backend
-- ✅ Responsive design with dark mode support
+* React 19
+* TypeScript
+* TanStack Start
+* Zustand
+* Tailwind CSS
+* Socket.io Client
+* React Hook Form
+* Zod
 
 ---
 
-## Local Setup
+## Backend
 
-### Prerequisites
+* Node.js
+* Express.js
+* MongoDB + Mongoose
+* Redis
+* BullMQ
+* Socket.io
 
-- Node.js 18+
-- Redis (local or cloud)
-- MongoDB Atlas account (free)
-- Gemini API key (free)
+---
 
-### Clone & Install
+## AI Layer
+
+* Google Gemini 2.0 Flash
+* Structured Prompt Engineering
+* JSON-based Output Parsing
+
+---
+
+# 📂 Project Structure
 
 ```bash
-git clone <repo-url>
-cd Veda-ai
+veda-ai/
+├── backend/
+│   ├── controllers/
+│   ├── models/
+│   ├── queues/
+│   ├── routes/
+│   ├── services/
+│   ├── workers/
+│   ├── sockets/
+│   └── utils/
+│
+├── src/
+│   ├── components/
+│   ├── hooks/
+│   ├── lib/
+│   ├── routes/
+│   ├── store/
+│   └── assets/
 ```
 
-### Backend
+---
+
+# ⚙️ Backend Flow
+
+## 1. Assignment Creation
+
+Frontend sends assignment configuration to:
+
+```http
+POST /api/assignments
+```
+
+---
+
+## 2. Queue Injection
+
+The server:
+
+* validates payload
+* stores assignment metadata
+* pushes a generation job into BullMQ
+
+---
+
+## 3. Worker Processing
+
+Dedicated workers:
+
+* generate prompts
+* invoke Gemini API
+* validate JSON output
+* store generated paper
+
+---
+
+## 4. Real-time Updates
+
+Socket.io broadcasts:
+
+* queued
+* generating
+* completed
+* failed
+
+The frontend updates instantly.
+
+---
+
+# 📡 WebSocket Event Contract
+
+## Client → Server
+
+```ts
+subscribe:assignment
+unsubscribe:assignment
+```
+
+---
+
+## Server → Client
+
+```ts
+assignment:status
+```
+
+Payload:
+
+```ts
+{
+  assignmentId: string;
+  status: "queued" | "generating" | "completed" | "failed";
+  paper?: object;
+  error?: string;
+}
+```
+
+---
+
+# 🧾 Structured AI Output
+
+Instead of rendering raw LLM responses, the system enforces structured JSON generation.
+
+Example:
+
+```json
+{
+  "title": "Mid-Term Examination",
+  "subject": "Physics",
+  "sections": [
+    {
+      "title": "Section A",
+      "instruction": "Attempt all questions",
+      "questions": [
+        {
+          "text": "Define Newton's First Law.",
+          "difficulty": "Easy",
+          "marks": 2
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+# 🔥 Why Queue-Based Processing?
+
+LLM generation can take 15–30 seconds.
+
+Instead of blocking HTTP requests:
+
+* jobs are pushed into Redis queues
+* workers process generation asynchronously
+* clients receive live updates via sockets
+
+This architecture:
+
+* improves scalability
+* avoids request timeouts
+* supports concurrent assessment generation
+
+---
+
+# 🧠 Design Decisions
+
+## Zustand over Redux
+
+Chosen for:
+
+* minimal boilerplate
+* lightweight global state
+* simpler async integration
+
+---
+
+## BullMQ + Redis
+
+Chosen because:
+
+* AI generation is long-running
+* retries and job persistence are needed
+* async workflows scale better
+
+---
+
+## Structured JSON Parsing
+
+Raw AI text is unreliable.
+
+The backend validates and parses AI responses into strongly typed structures before rendering.
+
+---
+
+# 📱 UI Highlights
+
+* Responsive dashboard
+* Mobile navigation support
+* Dynamic question builders
+* Real-time status indicators
+* Structured exam paper rendering
+* Modern Figma-inspired UI
+
+---
+
+# 🔐 Environment Variables
+
+Create a `.env` file in both frontend/backend where required.
+
+## Backend `.env`
+
+```env
+PORT=5000
+
+MONGODB_URI=your_mongodb_uri
+
+REDIS_URL=your_redis_url
+
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+---
+
+# 🚀 Running Locally
+
+## Frontend
+
+```bash
+npm install
+npm run dev
+```
+
+---
+
+## Backend
 
 ```bash
 cd backend
+
 npm install
-cp .env.example .env
-# Fill in MONGODB_URI, REDIS_URL, GEMINI_API_KEY in .env
+
 npm run dev
 ```
 
-> See [backend/SETUP.md](backend/SETUP.md) for detailed setup instructions.
+---
 
-### Frontend
+# 🌍 Deployment
 
-```bash
-# From project root
-npm install
-npm run dev
-```
+## Frontend
 
-Open [http://localhost:5173](http://localhost:5173)
+Recommended:
+
+* Vercel
+
+## Backend
+
+Recommended:
+
+* Render
+* Railway
 
 ---
 
-## Environment Variables
+# ⚠️ Current Limitations
 
-### Backend (`backend/.env`)
+## 1. Frontend Framework
 
-| Variable | Description | Example |
-|---|---|---|
-| `PORT` | Server port | `3001` |
-| `MONGODB_URI` | MongoDB connection string | `mongodb+srv://...` |
-| `REDIS_URL` | Redis connection string | `redis://localhost:6379` |
-| `GEMINI_API_KEY` | Google Gemini API key | `AIza...` |
-| `CLIENT_URL` | Frontend URL for CORS | `http://localhost:5173` |
-
-### Frontend (`.env`)
-
-| Variable | Description | Example |
-|---|---|---|
-| `VITE_API_URL` | Backend URL | `http://localhost:3001` |
+The frontend currently uses TanStack Start instead of Next.js because the UI scaffolding was generated using Lovable, which does not support Next.js.
 
 ---
 
-## API Endpoints
+## 2. AI Structured Output Reliability
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/api/assignments` | Create assignment + queue AI generation |
-| `GET` | `/api/assignments` | List all assignments |
-| `GET` | `/api/assignments/:id` | Get single assignment |
-| `DELETE` | `/api/assignments/:id` | Delete assignment |
-| `GET` | `/api/assignments/:id/status` | Get generation status |
-| `GET` | `/health` | Health check |
+The current implementation relies on prompt-based JSON compliance. Future versions can leverage Gemini native response schemas.
 
 ---
 
-## WebSocket Events
+## 3. Multimodal Upload Pipeline
 
-| Direction | Event | Payload |
-|---|---|---|
-| Client → Server | `subscribe:assignment` | `{ assignmentId }` |
-| Client → Server | `unsubscribe:assignment` | `{ assignmentId }` |
-| Server → Client | `assignment:status` | `{ assignmentId, status, paper?, error? }` |
-| Server → Client | `subscribed` | `{ assignmentId }` |
-
-### Status Flow
-
-```
-pending → queued → generating → completed
-                              → failed (retries up to 3x)
-```
+Document/image uploads are currently UI-ready but backend multimodal processing can be extended further.
 
 ---
 
-## Deployment
+## 4. Horizontal WebSocket Scaling
 
-### Frontend → Vercel
-
-1. Push to GitHub
-2. Connect repo to [Vercel](https://vercel.com)
-3. Set environment variable: `VITE_API_URL=https://your-backend.onrender.com`
-4. Deploy
-
-### Backend → Render
-
-1. Push to GitHub
-2. On [Render](https://render.com): New > Web Service > connect repo
-3. Root directory: `backend`
-4. Build command: `npm install && npm run build`
-5. Start command: `npm start`
-6. Set environment variables in dashboard
-7. Add a Redis instance (free tier)
-8. Set `CLIENT_URL` to your Vercel frontend URL
+Socket state is currently in-memory. Redis Socket.io adapters can be added for multi-instance deployments.
 
 ---
 
-## Project Structure
+# 🔮 Future Improvements
 
-```
-Veda-ai/
-├── src/                          # Frontend (TanStack Start + React)
-│   ├── routes/                   # File-based routing
-│   ├── store/                    # Zustand state management
-│   ├── lib/                      # API client, socket client
-│   ├── hooks/                    # React hooks
-│   └── components/               # UI components
-├── backend/                      # Backend (Express + TypeScript)
-│   └── src/
-│       ├── controllers/          # Route handlers
-│       ├── models/               # MongoDB schemas
-│       ├── routes/               # Express routes
-│       ├── services/             # AI service (Gemini)
-│       ├── queues/               # BullMQ queue setup
-│       ├── workers/              # BullMQ worker
-│       ├── sockets/              # Socket.io setup
-│       └── utils/                # Helpers
-├── vercel.json                   # Frontend deployment
-└── README.md
-```
+* Native Gemini Structured Outputs
+* Server-side PDF rendering
+* Classroom & teacher authentication
+* Role-based access
+* Multilingual question generation
+* Curriculum-aware AI generation
+* Cloud object storage for uploads
+* Redis socket clustering
+* Advanced analytics dashboard
 
 ---
 
-Built for **VedaAI Full Stack Engineering Assignment**
+# 🧪 Engineering Focus Areas
+
+This project emphasizes:
+
+* distributed system design
+* asynchronous architectures
+* AI orchestration pipelines
+* real-time communication
+* scalable backend workflows
+* structured data generation
+
+---
+
+# 📌 Submission Notes
+
+Due to API quota limitations, AI integrations may require evaluator-provided API keys through environment variables.
+
+The project includes:
+
+* complete architecture
+* integration pipeline
+* queue-based workflows
+* structured rendering logic
+* deployment-ready setup
+
+---
+
+# 👨‍💻 Author
+
+Anant Sharma
+
+Built for the VedaAI Full Stack Engineering Assignment.
