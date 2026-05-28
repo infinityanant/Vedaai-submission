@@ -286,7 +286,7 @@ This architecture:
 
 ---
 
-# 🧠 Design Decisions
+# ─── Design Decisions
 
 ## Zustand over Redux
 
@@ -389,7 +389,7 @@ Recommended:
 
 ## 1. Frontend Framework
 
-The frontend currently uses TanStack Start instead of Next.js because the UI scaffolding was generated using Lovable, which does not support Next.js.
+The frontend currently uses TanStack Start. Future updates could migrate to Next.js or other full-stack React frameworks if highly customized SSR configurations are needed.
 
 ---
 
@@ -452,7 +452,7 @@ The project includes:
 
 ---
 
-# 👨‍💻 Author
+# 👨💻 Author
 
 Anant Sharma
 

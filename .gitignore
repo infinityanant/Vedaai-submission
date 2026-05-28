@@ -31,6 +31,10 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment variables
+.env
+
+
 # Backend
 backend/node_modules
 backend/dist
