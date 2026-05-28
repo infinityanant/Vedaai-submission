@@ -5,17 +5,17 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
-  plugins: [
-    tsconfigPaths(),
-    tanstackStart({
-      server: { entry: "server" },
-    }),
-    react(),
-    tailwindcss(),
-  ],
-  resolve: {
-    alias: {
-      "@": "/src",
+    plugins: [
+        tsconfigPaths(),
+        tanstackStart({
+            server: { entry: "server" },
+        }),
+        react(),
+        tailwindcss(),
+    ],
+    resolve: {
+        alias: {
+            "@": "/src",
+        },
     },
-  },
 });
